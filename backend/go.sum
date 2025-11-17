@@ -54,6 +54,8 @@ github.com/jkesh/ts3-go v0.0.0-20251117221508-5936d0477823 h1:bPPm4//KAa1AzHlll7
 github.com/jkesh/ts3-go v0.0.0-20251117221508-5936d0477823/go.mod h1:z73YVE5GCkIgVtw9t1gfiJMwsXrJaesaOJPcCp5/ZM0=
 github.com/jkesh/ts3-go v1.0.0 h1:hnuk3dChTix/n7V+8vGdiAUtTso6GGNCaBQd8Mkl+kU=
 github.com/jkesh/ts3-go v1.0.0/go.mod h1:z73YVE5GCkIgVtw9t1gfiJMwsXrJaesaOJPcCp5/ZM0=
+github.com/jkesh/ts3-go v1.0.1 h1:3LHRww19wySXSiRBweSHAqu2hhWK2Ix7uRNMq1KchJA=
+github.com/jkesh/ts3-go v1.0.1/go.mod h1:z73YVE5GCkIgVtw9t1gfiJMwsXrJaesaOJPcCp5/ZM0=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/klauspost/cpuid/v2 v2.3.0 h1:S4CRMLnYUhGeDFDqkGriYKdfoFlDnMtqTiI/sFzhA9Y=

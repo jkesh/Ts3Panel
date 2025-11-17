@@ -24,7 +24,7 @@ func Setup() *gin.Engine {
 	auth := r.Group("/auth")
 	{
 		auth.POST("/login", api.Login)
-		auth.POST("/register", api.Register) // 生产环境建议关闭或加权限
+		auth.POST("/register", api.Register)
 	}
 
 	apiV1 := r.Group("/api/v1")
@@ -33,7 +33,7 @@ func Setup() *gin.Engine {
 		apiV1.GET("/server", api.GetServerInfo)
 		apiV1.GET("/clients", api.ListClients)
 		apiV1.POST("/client/:id/kick", api.KickClient)
-		apiV1.GET("/events", api.StreamEvents) // SSE 需要处理 Token 传递问题，通常用 Query Param
+		apiV1.GET("/events/stream", api.StreamEvents) // SSE 需要处理 Token 传递问题，通常用 Query Param
 	}
 
 	return r
