@@ -1,0 +1,20 @@
+app:
+  jwt_secret: "ts3PanelJWTSecretToken"
+  port: ":8080"
+
+ts3:
+  protocol: "tcp"       # "tcp" (Raw) 或 "ssh" (TS3 3.3+)
+  host: "43.131.41.101"
+  port: 10011           # TCP 默认 10011, SSH 默认 10022
+  user: "serveradmin"
+  password: "jkesh1024"
+
+# 新增数据库配置
+database:
+  driver: "postgres"      # "postgres" 或 "sqlite"
+  host: "43.131.41.101"
+  port: 5432
+  user: "root"
+  password: "jkesh1024"
+  dbname: "ts3panel"
+  timezone: "Asia/Shanghai"
