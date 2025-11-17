@@ -2,11 +2,14 @@ package api
 
 import (
 	"Ts3Panel/core"
+
 	"github.com/gin-gonic/gin"
 )
 
 func GetServerInfo(c *gin.Context) {
-	// [关键] 传入 c.Request.Context() 以便 Client.Exec 使用
+	core.Mutex.Lock()
+	defer core.Mutex.Unlock()
+
 	info, err := core.Client.ServerInfo(c.Request.Context())
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})

@@ -20,6 +20,7 @@ func (l *DebugLogger) Debugf(format string, v ...interface{}) { log.Printf(forma
 
 var (
 	Client  *ts3.Client
+	Mutex   sync.Mutex // [新增] 添加全局锁
 	once    sync.Once
 	sseChan = make(chan map[string]string, 100)
 )
