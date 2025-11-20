@@ -45,6 +45,11 @@
             <el-table-column label="权限名 (PermSID)" show-overflow-tooltip>
               <template #default="scope">
                 <span v-if="scope.row.name">{{ scope.row.name }}</span>
+
+                <span v-else-if="permMap[scope.row.permid]" style="color: #409eff;">
+                  {{ permMap[scope.row.permid] }}
+                </span>
+
                 <span v-else style="color: #999;">ID: {{ scope.row.permid }}</span>
               </template>
             </el-table-column>
@@ -90,6 +95,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import api from '../api'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import permMap from '../utils/permMap.js'
 
 const groups = ref([])
 const loading = ref(false)
@@ -144,7 +150,8 @@ const openPermDialog = async (row) => {
 
 // 3. 点击左侧表格行，回显数据到右侧表单
 const selectPerm = (row) => {
-  formPerm.name = row.name
+  // 优先使用后端返回的 Name，如果为空，则尝试从 permMap 查找，最后才用 ID
+  formPerm.name = row.name || permMap[row.permid] || row.permid.toString()
   formPerm.value = row.value
 }
 

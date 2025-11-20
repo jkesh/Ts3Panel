@@ -34,7 +34,7 @@ func Setup() *gin.Engine {
 		apiV1.GET("/clients", api.ListClients)
 		apiV1.POST("/client/:id/kick", api.KickClient)
 		apiV1.GET("/events/stream", api.StreamEvents)
-
+		apiV1.POST("/broadcast", api.Broadcast)
 		apiV1.POST("/channel/create", api.CreateChannel) // 新建频道
 		apiV1.POST("/token/create", api.CreateToken)     // 生成 Token
 
@@ -51,6 +51,12 @@ func Setup() *gin.Engine {
 		// 权限管理
 		apiV1.POST("/servergroup/:sgid/permission", api.AddServerGroupPerm)
 		apiV1.GET("/servergroup/:sgid/permissions", api.ListServerGroupPerms) // [新增] 获取权限列表
+
+		// 封禁处理
+		apiV1.GET("/bans", api.GetBanList)
+		apiV1.POST("/ban", api.AddBan)
+		apiV1.DELETE("/ban/:banid", api.DeleteBan)
+		apiV1.DELETE("/bans/all", api.DeleteAllBans)
 	}
 
 	return r

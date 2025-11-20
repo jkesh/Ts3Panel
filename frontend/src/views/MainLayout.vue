@@ -22,6 +22,10 @@
           <el-icon><UserFilled /></el-icon>
           <span>权限组管理</span>
         </el-menu-item>
+        <el-menu-item index="/bans">
+          <el-icon><Lock /></el-icon>
+          <span>封禁管理</span>
+        </el-menu-item>
       </el-menu>
 
       <div class="logout-area">
@@ -46,7 +50,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Odometer, Monitor, UserFilled } from '@element-plus/icons-vue'
+import { Odometer, Monitor, UserFilled, Lock } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
