@@ -2,7 +2,7 @@
 
 Ts3Panel 是一个基于 Go (后端) 和 Vue 3 (前端) 构建的现代化 TeamSpeak 3 服务器管理面板。它提供了一个直观的 Web 界面，用于管理 TS3 服务器实例、频道、权限组、用户封禁等核心功能。
 
-![Dashboard Preview](https://via.placeholder.com/800x400?text=Ts3Panel+Dashboard+Preview)
+![Logo]([https://via.placeholder.com/800x400?text=Ts3Panel+Dashboard+Preview](https://github.com/user-attachments/assets/b05e3595-6787-4751-9397-9a9e979fb7d7))
 
 ## ✨ 功能特性
 
@@ -142,4 +142,5 @@ Ts3Panel/ ├── backend/ # 后端 Go 代码 │ ├── api/ # API 处理�
 ## 📄 许可证
 
 MIT License
+
 
