@@ -24,19 +24,18 @@ func Setup() *gin.Engine {
 	auth := r.Group("/auth")
 	{
 		auth.POST("/login", api.Login)
-		// [修改] 移除原来的公开注册接口，防止任意用户自助注册
 		auth.POST("/register", api.Register)
 	}
 
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.AuthRequired())
 	{
-		// [修改] 将注册接口移动到此处，只有已登录的用户（管理员）才能创建新账号
-		// apiV1.POST("/register", api.Register)
-
 		apiV1.GET("/server", api.GetServerInfo)
 		apiV1.GET("/clients", api.ListClients)
 		apiV1.POST("/client/:id/kick", api.KickClient)
+
+		apiV1.POST("/broadcast", api.Broadcast)
+
 		apiV1.GET("/events/stream", api.StreamEvents)
 	}
 
