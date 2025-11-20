@@ -125,31 +125,6 @@ Ts3Panel 是一个基于 Go (后端) 和 Vue 3 (前端) 构建的现代化 TeamS
     ```
     构建生成的文件位于 `frontend/dist` 目录。你可以将这些文件部署到 Nginx，或者配置后端 Go 服务来托管静态文件。
 
-## 📂 项目结构
-mindmap
-  root((Ts3Panel))
-    backend(后端 Go)
-      api
-      config
-      core
-      database
-      middleware
-      models
-      router
-      utils
-      main.go
-    frontend(前端 Vue)
-      src
-        api
-        router
-        stores
-        utils
-        views
-        App.vue
-        main.js
-      public
-      vite.config.js
-
 
 ## 📝 注意事项
 
@@ -164,6 +139,7 @@ mindmap
 ## 📄 许可证
 
 MIT License
+
 
 
 
