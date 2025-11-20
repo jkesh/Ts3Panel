@@ -126,31 +126,29 @@ Ts3Panel 是一个基于 Go (后端) 和 Vue 3 (前端) 构建的现代化 TeamS
     构建生成的文件位于 `frontend/dist` 目录。你可以将这些文件部署到 Nginx，或者配置后端 Go 服务来托管静态文件。
 
 ## 📂 项目结构
-Ts3Panel/
-├── backend/                    # 后端 Go 代码
-│   ├── api/                    # API 处理函数 (Server, Client, Manage, Ban, Auth)
-│   ├── config/                 # 配置加载 (Viper)
-│   ├── core/                   # TS3 连接与核心逻辑
-│   ├── database/               # 数据库连接与初始化
-│   ├── middleware/             # 中间件 (JWT Auth)
-│   ├── models/                 # 数据库模型 (User)
-│   ├── router/                 # Gin 路由定义
-│   ├── utils/                  # 工具函数 (Password Hash, JWT)
-│   └── main.go                 # 程序入口
-│
-├── frontend/                   # 前端 Vue 代码
-│   ├── src/                    
-│   │   ├── api/                # Axios 请求封装
-│   │   ├── router/             # Vue Router 路由配置
-│   │   ├── stores/             # Pinia 状态管理
-│   │   ├── utils/              # 工具类 (如权限名映射表 permMap.js)
-│   │   ├── views/              # 页面组件 (Dashboard, Login, etc.)
-│   │   ├── App.vue             # 根组件
-│   │   └── main.js             # 入口文件
-│   ├── public/                 # 静态资源
-│   └── vite.config.js          # Vite 配置
-│
-└── README.md
+mindmap
+  root((Ts3Panel))
+    backend(后端 Go)
+      api
+      config
+      core
+      database
+      middleware
+      models
+      router
+      utils
+      main.go
+    frontend(前端 Vue)
+      src
+        api
+        router
+        stores
+        utils
+        views
+        App.vue
+        main.js
+      public
+      vite.config.js
 
 
 ## 📝 注意事项
@@ -166,6 +164,7 @@ Ts3Panel/
 ## 📄 许可证
 
 MIT License
+
 
 
 
