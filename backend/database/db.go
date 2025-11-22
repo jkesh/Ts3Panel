@@ -52,6 +52,9 @@ func InitDB() {
 	if err := DB.AutoMigrate(&models.User{}); err != nil {
 		log.Fatalf("[Database] Migration failed: %v", err)
 	}
-
+	if err := DB.AutoMigrate(&models.User{}, &models.MusicBot{}); err != nil { // [!code ++]
+		log.Fatalf("[Database] Migration failed: %v", err)
+	}
 	log.Println("[Database] Initialized successfully.")
+
 }
