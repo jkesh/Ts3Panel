@@ -41,6 +41,7 @@ var (
 func InitTS3() error {
 	once.Do(func() {
 		conf := config.GlobalConfig.TS3
+		activeProtocol := conf.Protocol
 		runtimeCfg := ts3.Config{
 			Host:            conf.Host,
 			Port:            conf.Port,
@@ -56,16 +57,20 @@ func InitTS3() error {
 			}
 			log.Println("[Core] Connecting via SSH...")
 			client, initErr = ts3.NewSSHClientWithConfig(conf.Host, conf.Port, conf.User, conf.Password, runtimeCfg)
-			if initErr != nil && shouldFallbackToTCP(initErr) {
-				fallbackPort := conf.Port
-				if fallbackPort == 0 || fallbackPort == 10022 {
-					fallbackPort = 10011
+			if initErr != nil && shouldFallbackToTCP(initErr) && conf.FallbackProtocol == "tcp" {
+				fallbackHost := conf.FallbackHost
+				fallbackPort := conf.FallbackPort
+				if fallbackHost == "" || fallbackPort == 0 {
+					initErr = fmt.Errorf("ts3 ssh fallback tcp requires fallback_host/fallback_port config")
+					return
 				}
 
-				log.Printf("[Core] SSH handshake failed (%v), fallback to TCP Raw on %s:%d...", initErr, conf.Host, fallbackPort)
+				log.Printf("[Core] SSH handshake failed (%v), fallback to TCP Raw on %s:%d (from config)...", initErr, fallbackHost, fallbackPort)
+				runtimeCfg.Host = fallbackHost
 				runtimeCfg.Port = fallbackPort
 				client, initErr = ts3.NewClient(runtimeCfg)
 				if initErr == nil {
+					activeProtocol = "tcp"
 					log.Println("[Core] TCP fallback connected successfully.")
 				}
 			}
@@ -107,7 +112,7 @@ func InitTS3() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		if conf.Protocol == "tcp" {
+		if activeProtocol == "tcp" {
 			if err := client.Login(ctx, conf.User, conf.Password); err != nil {
 				initErr = fmt.Errorf("login failed: %w", err)
 				return
@@ -119,7 +124,7 @@ func InitTS3() error {
 			return
 		}
 
-		if conf.Protocol != "webquery" {
+		if activeProtocol != "webquery" {
 			go registerEvents()
 		} else {
 			log.Println("[Core] WebQuery mode: event subscribe is disabled.")
