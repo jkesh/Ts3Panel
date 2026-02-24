@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"log"
+	"strings"
 )
 
 type AppConfig struct {
@@ -77,7 +78,22 @@ func LoadConfig() error {
 		cfg.TS3.ServerID = 1
 	}
 	if cfg.TS3.Protocol == "" {
-		cfg.TS3.Protocol = "tcp"
+		cfg.TS3.Protocol = "webquery"
+	}
+	cfg.TS3.Protocol = strings.ToLower(strings.TrimSpace(cfg.TS3.Protocol))
+	if cfg.TS3.Port == 0 {
+		switch cfg.TS3.Protocol {
+		case "ssh":
+			cfg.TS3.Port = 10022
+		case "webquery":
+			if cfg.TS3.HTTPS {
+				cfg.TS3.Port = 10443
+			} else {
+				cfg.TS3.Port = 10080
+			}
+		default:
+			cfg.TS3.Port = 10011
+		}
 	}
 	if cfg.App.Port == "" {
 		cfg.App.Port = ":8080"

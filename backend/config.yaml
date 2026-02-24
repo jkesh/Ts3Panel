@@ -3,19 +3,23 @@ app:
   port: ":8080"
 
 ts3:
-  protocol: "tcp"       # "tcp" (Raw) 或 "ssh" (TS3 3.3+)
-  host: "115.159.58.72"
-  port: 10011           # TCP 默认 10011, SSH 默认 10022
-  server_id: 1          # 虚拟服务器 ID（对应 `use sid=1`）
-  user: "serveradmin"
-  password: "jkesh1024"
+  protocol: "webquery"  # "webquery" | "tcp" | "ssh"
+  host: "127.0.0.1"
+  port: 10080           # webquery: 10080(http)/10443(https), tcp:10011, ssh:10022
+  server_id: 1
+  user: "serveradmin"   # tcp/ssh 使用
+  password: ""          # tcp/ssh 使用
+  api_key: ""           # webquery 必填
+  https: false          # webquery + TLS 时设为 true
+  base_path: ""         # 可选: 例如 "query"
 
 # 新增数据库配置
 database:
   driver: "postgres"      # "postgres" 或 "sqlite"
-  host: "43.131.41.101"
+  host: "127.0.0.1"
   port: 5432
-  user: "root"
-  password: "jkesh1024"
+  user: "postgres"
+  password: "postgres"
   dbname: "ts3panel"
+  sslmode: "disable"
   timezone: "Asia/Shanghai"

@@ -34,7 +34,7 @@ Ts3Panel 是一个基于 Go (后端) 和 Vue 3 (前端) 构建的现代化 TeamS
 * **语言**: Go 1.25+
 * **Web 框架**: [Gin](https://github.com/gin-gonic/gin)
 * **ORM**: [GORM](https://gorm.io/) (支持 PostgreSQL & SQLite)
-* **TS3 库**: [ts3-go](https://github.com/jkesh/ts3-go)（基于 v2.0.0 标签对应实现）
+* **TS3 库**: [ts3-go](https://github.com/jkesh/ts3-go)（基于 v2.0.1）
 * **配置管理**: [Viper](https://github.com/spf13/viper)
 * **鉴权**: JWT (JSON Web Tokens)
 
@@ -78,9 +78,9 @@ Ts3Panel 是一个基于 Go (后端) 和 Vue 3 (前端) 构建的现代化 TeamS
       port: ":8080"
 
     ts3:
-      protocol: "tcp"       # "tcp" | "ssh" | "webquery"
+      protocol: "webquery"  # "webquery" | "tcp" | "ssh"
       host: "127.0.0.1"     # TS3 服务器 IP
-      port: 10011           # tcp:10011, ssh:10022, webquery:10080/10443
+      port: 10080           # webquery:10080(http)/10443(https), tcp:10011, ssh:10022
       server_id: 1          # 虚拟服务器 ID (use sid)
       user: "serveradmin"   # tcp/ssh Query 账号
       password: "your_password" # tcp/ssh Query 密码

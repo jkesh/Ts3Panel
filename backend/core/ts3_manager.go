@@ -48,13 +48,25 @@ func InitTS3() error {
 
 		switch conf.Protocol {
 		case "ssh":
+			if conf.User == "" || conf.Password == "" {
+				initErr = errors.New("ts3 ssh requires user/password")
+				return
+			}
 			log.Println("[Core] Connecting via SSH...")
 			client, initErr = ts3.NewSSHClientWithConfig(conf.Host, conf.Port, conf.User, conf.Password, runtimeCfg)
 		case "tcp":
+			if conf.User == "" || conf.Password == "" {
+				initErr = errors.New("ts3 tcp requires user/password")
+				return
+			}
 			log.Println("[Core] Connecting via TCP (Raw)...")
 			client, initErr = ts3.NewClient(runtimeCfg)
 		case "webquery":
-			log.Println("[Core] Connecting via WebQuery...")
+			if conf.APIKey == "" {
+				initErr = errors.New("ts3 webquery requires api_key")
+				return
+			}
+			log.Println("[Core] Connecting via HTTP WebQuery...")
 			wqCfg := ts3.WebQueryConfig{
 				Host:            conf.Host,
 				Port:            conf.Port,
