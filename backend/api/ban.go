@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jkesh/ts3-go/ts3"
-	ts3models "github.com/jkesh/ts3-go/ts3/models"
+	"github.com/jkesh/ts3-go/v2/ts3"
+	ts3models "github.com/jkesh/ts3-go/v2/ts3/models"
 )
 
 type BanEntry struct {

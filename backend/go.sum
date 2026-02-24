@@ -50,8 +50,10 @@ github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.1.5 h1:/o9tlHleP7gOFmsnYNz3RGnqzefHA47wQpKrrdTIwXQ=
 github.com/jinzhu/now v1.1.5/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
-github.com/jkesh/ts3-go v1.0.3-0.20260224111016-f3eb629e44a2 h1:k27jyNijJZsbkXuZAdIR+CgPNMJljjOB9rxEPMb7VE8=
-github.com/jkesh/ts3-go v1.0.3-0.20260224111016-f3eb629e44a2/go.mod h1:z73YVE5GCkIgVtw9t1gfiJMwsXrJaesaOJPcCp5/ZM0=
+github.com/jkesh/ts3-go v1.0.2 h1:x9/MBuvA+gZ2U4IOFuk4XnwGfEZHwHEBStZWh4E4/U0=
+github.com/jkesh/ts3-go v1.0.2/go.mod h1:z73YVE5GCkIgVtw9t1gfiJMwsXrJaesaOJPcCp5/ZM0=
+github.com/jkesh/ts3-go/v2 v2.0.1 h1:PJxLYzCVor2PHeaZeCfYiwPvjskmqhPcQmhhkmYyEA4=
+github.com/jkesh/ts3-go/v2 v2.0.1/go.mod h1:Z3HLbHu1YTKdDHgh/d90Mw2dYCUFWzhSb4zoeSOc+fA=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/klauspost/cpuid/v2 v2.3.0 h1:S4CRMLnYUhGeDFDqkGriYKdfoFlDnMtqTiI/sFzhA9Y=

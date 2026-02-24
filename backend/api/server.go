@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jkesh/ts3-go/ts3"
+	"github.com/jkesh/ts3-go/v2/ts3"
 )
 
 type serverInfoResp struct {

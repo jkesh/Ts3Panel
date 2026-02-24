@@ -3,15 +3,12 @@ app:
   port: ":8080"
 
 ts3:
-  protocol: "tcp"       # "tcp" | "ssh" | "webquery"
-  host: "43.131.41.101"
-  port: 10011           # tcp 默认 10011, ssh 默认 10022, webquery 默认 10080/10443
+  protocol: "tcp"       # "tcp" (Raw) 或 "ssh" (TS3 3.3+)
+  host: "115.159.58.72"
+  port: 10011           # TCP 默认 10011, SSH 默认 10022
   server_id: 1          # 虚拟服务器 ID（对应 `use sid=1`）
   user: "serveradmin"
   password: "jkesh1024"
-  api_key: ""           # protocol=webquery 时使用（TS6 query-api key）
-  https: false          # protocol=webquery 且启用 TLS 时设为 true
-  base_path: ""         # 可选，例如 "query"
 
 # 新增数据库配置
 database:
