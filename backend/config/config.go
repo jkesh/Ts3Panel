@@ -24,15 +24,18 @@ type DatabaseConfig struct {
 }
 
 type TS3Config struct {
-	Protocol string `mapstructure:"protocol"` // tcp | ssh | webquery
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	ServerID int    `mapstructure:"server_id"`
-	APIKey   string `mapstructure:"api_key"`
-	HTTPS    bool   `mapstructure:"https"`
-	BasePath string `mapstructure:"base_path"`
+	Protocol         string `mapstructure:"protocol"` // tcp | ssh | webquery
+	Host             string `mapstructure:"host"`
+	Port             int    `mapstructure:"port"`
+	User             string `mapstructure:"user"`
+	Password         string `mapstructure:"password"`
+	ServerID         int    `mapstructure:"server_id"`
+	APIKey           string `mapstructure:"api_key"`
+	HTTPS            bool   `mapstructure:"https"`
+	BasePath         string `mapstructure:"base_path"`
+	FallbackProtocol string `mapstructure:"fallback_protocol"` // empty | tcp
+	FallbackHost     string `mapstructure:"fallback_host"`
+	FallbackPort     int    `mapstructure:"fallback_port"`
 }
 
 type Config struct {
@@ -78,9 +81,10 @@ func LoadConfig() error {
 		cfg.TS3.ServerID = 1
 	}
 	if cfg.TS3.Protocol == "" {
-		cfg.TS3.Protocol = "webquery"
+		cfg.TS3.Protocol = "ssh"
 	}
 	cfg.TS3.Protocol = strings.ToLower(strings.TrimSpace(cfg.TS3.Protocol))
+	cfg.TS3.FallbackProtocol = strings.ToLower(strings.TrimSpace(cfg.TS3.FallbackProtocol))
 	if cfg.TS3.Port == 0 {
 		switch cfg.TS3.Protocol {
 		case "ssh":
@@ -94,6 +98,15 @@ func LoadConfig() error {
 		default:
 			cfg.TS3.Port = 10011
 		}
+	}
+	if cfg.TS3.FallbackProtocol == "" {
+		cfg.TS3.FallbackProtocol = "ssh"
+	}
+	if cfg.TS3.FallbackHost == "" {
+		cfg.TS3.FallbackHost = cfg.TS3.Host
+	}
+	if cfg.TS3.FallbackPort == 0 && cfg.TS3.FallbackProtocol == "ssh" {
+		cfg.TS3.FallbackPort = cfg.TS3.Port
 	}
 	if cfg.App.Port == "" {
 		cfg.App.Port = ":8080"
