@@ -1,40 +1,45 @@
 package config
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
 	"log"
 )
 
+type AppConfig struct {
+	JWTSecret string `mapstructure:"jwt_secret"`
+	Port      string `mapstructure:"port"`
+}
+
+type DatabaseConfig struct {
+	Driver   string `mapstructure:"driver"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	DBName   string `mapstructure:"dbname"`
+	SSLMode  string `mapstructure:"sslmode"`
+	TimeZone string `mapstructure:"timezone"`
+}
+
+type TS3Config struct {
+	Protocol string `mapstructure:"protocol"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	ServerID int    `mapstructure:"server_id"`
+}
+
 type Config struct {
-	App struct {
-		JWTSecret string `mapstructure:"jwt_secret"`
-		Port      string `mapstructure:"port"`
-	} `mapstructure:"app"`
-
-	// [新增] 数据库配置
-	Database struct {
-		Driver   string `mapstructure:"driver"`
-		Host     string `mapstructure:"host"`
-		Port     int    `mapstructure:"port"`
-		User     string `mapstructure:"user"`
-		Password string `mapstructure:"password"`
-		DBName   string `mapstructure:"dbname"`
-		SSLMode  string `mapstructure:"sslmode"`
-		TimeZone string `mapstructure:"timezone"`
-	} `mapstructure:"database"`
-
-	TS3 struct {
-		Protocol string `mapstructure:"protocol"`
-		Host     string `mapstructure:"host"`
-		Port     int    `mapstructure:"port"`
-		User     string `mapstructure:"user"`
-		Password string `mapstructure:"password"`
-	} `mapstructure:"ts3"`
+	App      AppConfig      `mapstructure:"app"`
+	Database DatabaseConfig `mapstructure:"database"`
+	TS3      TS3Config      `mapstructure:"ts3"`
 }
 
 var GlobalConfig *Config
 
-func LoadConfig() {
+func LoadConfig() error {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
@@ -47,22 +52,34 @@ func LoadConfig() {
 		log.Printf("[Config] Warning: %v, using defaults", err)
 	}
 
-	GlobalConfig = &Config{}
-	if err := viper.Unmarshal(GlobalConfig); err != nil {
-		log.Fatalf("[Config] Failed to parse config: %v", err)
+	cfg := &Config{}
+	if err := viper.Unmarshal(cfg); err != nil {
+		return fmt.Errorf("failed to parse config: %w", err)
 	}
 
 	// 设置默认值
-	if GlobalConfig.Database.Driver == "" {
-		GlobalConfig.Database.Driver = "postgres"
+	if cfg.Database.Driver == "" {
+		cfg.Database.Driver = "postgres"
 	}
-	if GlobalConfig.Database.Host == "" {
-		GlobalConfig.Database.Host = "127.0.0.1"
+	if cfg.Database.Host == "" {
+		cfg.Database.Host = "127.0.0.1"
 	}
-	if GlobalConfig.Database.Port == 0 {
-		GlobalConfig.Database.Port = 5432
+	if cfg.Database.Port == 0 {
+		cfg.Database.Port = 5432
 	}
-	if GlobalConfig.Database.SSLMode == "" {
-		GlobalConfig.Database.SSLMode = "disable"
+	if cfg.Database.SSLMode == "" {
+		cfg.Database.SSLMode = "disable"
 	}
+	if cfg.TS3.ServerID == 0 {
+		cfg.TS3.ServerID = 1
+	}
+	if cfg.TS3.Protocol == "" {
+		cfg.TS3.Protocol = "tcp"
+	}
+	if cfg.App.Port == "" {
+		cfg.App.Port = ":8080"
+	}
+
+	GlobalConfig = cfg
+	return nil
 }

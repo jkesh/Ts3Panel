@@ -4,6 +4,8 @@ import (
 	"Ts3Panel/database"
 	"Ts3Panel/models"
 	"Ts3Panel/utils"
+	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,38 +18,57 @@ type LoginReq struct {
 func Register(c *gin.Context) {
 	var req LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		jsonError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	req.Username = strings.TrimSpace(req.Username)
+	if req.Username == "" {
+		jsonError(c, http.StatusBadRequest, "username is required")
 		return
 	}
 
-	hash, _ := utils.HashPassword(req.Password)
-	user := models.User{Username: req.Username, Password: hash}
+	hash, err := utils.HashPassword(req.Password)
+	if err != nil {
+		jsonError(c, http.StatusInternalServerError, "password hash failed")
+		return
+	}
+	user := models.User{Username: req.Username, Password: hash, Role: "user"}
+
+	var userCount int64
+	if err := database.DB.Model(&models.User{}).Count(&userCount).Error; err == nil && userCount == 0 {
+		user.Role = "admin"
+	}
 
 	if err := database.DB.Create(&user).Error; err != nil {
-		c.JSON(500, gin.H{"error": "User creation failed (username exists?)"})
+		jsonError(c, http.StatusInternalServerError, "User creation failed (username exists?)")
 		return
 	}
-	c.JSON(201, gin.H{"msg": "Created"})
+	jsonMessage(c, http.StatusCreated, "Created")
 }
 
 func Login(c *gin.Context) {
 	var req LoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		jsonError(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	req.Username = strings.TrimSpace(req.Username)
 
 	var user models.User
 	if err := database.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		c.JSON(401, gin.H{"error": "Invalid credentials"})
+		jsonError(c, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
 	if !utils.CheckPasswordHash(req.Password, user.Password) {
-		c.JSON(401, gin.H{"error": "Invalid credentials"})
+		jsonError(c, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
-	token, _ := utils.GenerateToken(user.ID, user.Role)
-	c.JSON(200, gin.H{"token": token})
+	token, err := utils.GenerateToken(user.ID, user.Role)
+	if err != nil {
+		jsonError(c, http.StatusInternalServerError, "Token generation failed")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": token})
 }

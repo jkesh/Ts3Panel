@@ -81,6 +81,7 @@ Ts3Panel 是一个基于 Go (后端) 和 Vue 3 (前端) 构建的现代化 TeamS
       protocol: "tcp"       # "tcp" (Raw Query) 或 "ssh"
       host: "127.0.0.1"     # TS3 服务器 IP
       port: 10011           # ServerQuery 端口 (默认 10011)
+      server_id: 1          # 虚拟服务器 ID (use sid)
       user: "serveradmin"   # Query 账号
       password: "your_password" # Query 密码
 

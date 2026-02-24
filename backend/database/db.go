@@ -13,7 +13,7 @@ import (
 
 var DB *gorm.DB
 
-func InitDB() {
+func InitDB() error {
 	var err error
 	cfg := config.GlobalConfig.Database
 
@@ -45,16 +45,13 @@ func InitDB() {
 
 	DB, err = gorm.Open(dialector, &gorm.Config{})
 	if err != nil {
-		log.Fatalf("[Database] Connection failed: %v", err)
+		return fmt.Errorf("database connection failed: %w", err)
 	}
 
-	// 自动迁移表结构
-	if err := DB.AutoMigrate(&models.User{}); err != nil {
-		log.Fatalf("[Database] Migration failed: %v", err)
+	if err := DB.AutoMigrate(&models.User{}, &models.MusicBot{}); err != nil {
+		return fmt.Errorf("database migration failed: %w", err)
 	}
-	if err := DB.AutoMigrate(&models.User{}, &models.MusicBot{}); err != nil { // [!code ++]
-		log.Fatalf("[Database] Migration failed: %v", err)
-	}
+
 	log.Println("[Database] Initialized successfully.")
-
+	return nil
 }

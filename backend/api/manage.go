@@ -4,132 +4,158 @@ import (
 	"Ts3Panel/core"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jkesh/ts3-go/ts3"
+	ts3models "github.com/jkesh/ts3-go/ts3/models"
 )
 
 type PermReq struct {
 	PermName  string `json:"perm_name" binding:"required"`
-	PermValue int    `json:"perm_value"` // 如果是删除权限，这个值可能不重要，但在 Add 时必需
+	PermValue int    `json:"perm_value"`
 }
 
 // AddChannelPerm 修改频道权限
 func AddChannelPerm(c *gin.Context) {
-	cid, _ := strconv.Atoi(c.Param("cid"))
+	cid, ok := parsePathInt(c, "cid")
+	if !ok {
+		return
+	}
+
 	var req PermReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		jsonError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	core.Mutex.Lock()
-	defer core.Mutex.Unlock()
-
-	if err := core.Client.ChannelAddPerm(c.Request.Context(), cid, req.PermName, req.PermValue); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	err := core.WithTS3(func(ts3Client *ts3.Client) error {
+		return ts3Client.ChannelAddPerm(c.Request.Context(), cid, req.PermName, req.PermValue)
+	})
+	if err != nil {
+		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"msg": "Updated"})
+
+	jsonMessage(c, http.StatusOK, "Updated")
 }
 
 // AddServerGroupPerm 修改服务器组权限
 func AddServerGroupPerm(c *gin.Context) {
-	sgid, _ := strconv.Atoi(c.Param("sgid"))
+	sgid, ok := parsePathInt(c, "sgid")
+	if !ok {
+		return
+	}
+
 	var req PermReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		jsonError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	core.Mutex.Lock()
-	defer core.Mutex.Unlock()
-
-	// negated=false, skip=false 为默认
-	if err := core.Client.ServerGroupAddPerm(c.Request.Context(), sgid, req.PermName, req.PermValue, false, false); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	err := core.WithTS3(func(ts3Client *ts3.Client) error {
+		return ts3Client.ServerGroupAddPerm(c.Request.Context(), sgid, req.PermName, req.PermValue, false, false)
+	})
+	if err != nil {
+		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"msg": "Updated"})
+
+	jsonMessage(c, http.StatusOK, "Updated")
 }
 
 // AddClientDbPerm 修改客户端(数据库ID)权限
 func AddClientDbPerm(c *gin.Context) {
-	cldbid, _ := strconv.Atoi(c.Param("cldbid"))
+	cldbid, ok := parsePathInt(c, "cldbid")
+	if !ok {
+		return
+	}
+
 	var req PermReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		jsonError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	core.Mutex.Lock()
-	defer core.Mutex.Unlock()
-
-	// skip=false 为默认
-	if err := core.Client.ClientAddPerm(c.Request.Context(), cldbid, req.PermName, req.PermValue, false); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"msg": "Updated"})
-}
-func GetChannels(c *gin.Context) {
-	core.Mutex.Lock()
-	defer core.Mutex.Unlock()
-
-	// 调用 ts3-go 的 ChannelList 方法
-	channels, err := core.Client.ChannelList(c.Request.Context(), "-topic", "-flags")
+	err := core.WithTS3(func(ts3Client *ts3.Client) error {
+		return ts3Client.ClientAddPerm(c.Request.Context(), cldbid, req.PermName, req.PermValue, false)
+	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	jsonMessage(c, http.StatusOK, "Updated")
+}
+
+func GetChannels(c *gin.Context) {
+	channels, err := core.WithTS3Value(func(ts3Client *ts3.Client) ([]ts3models.Channel, error) {
+		return ts3Client.ChannelList(c.Request.Context(), "-topic", "-flags")
+	})
+	if err != nil {
+		jsonError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": channels})
 }
 
 // DeleteChannel 删除频道
 func DeleteChannel(c *gin.Context) {
-	cidStr := c.Param("cid")
-	forceStr := c.DefaultQuery("force", "0") // 0=只删除空频道, 1=强制删除(包括里面的人)
-
-	core.Mutex.Lock()
-	defer core.Mutex.Unlock()
-
-	// [修正] 将 HfStr 改为 forceStr
-	cmd := fmt.Sprintf("channeldelete cid=%s force=%s", cidStr, forceStr)
-
-	if _, err := core.Client.Exec(c.Request.Context(), cmd); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	cid, ok := parsePathInt(c, "cid")
+	if !ok {
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"msg": "Deleted"})
+	force, ok := parseQueryIntWithDefault(c, "force", 0)
+	if !ok {
+		return
+	}
+
+	cmd := fmt.Sprintf("channeldelete cid=%d force=%d", cid, force)
+	err := core.WithTS3(func(ts3Client *ts3.Client) error {
+		_, err := ts3Client.Exec(c.Request.Context(), cmd)
+		return err
+	})
+	if err != nil {
+		jsonError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	jsonMessage(c, http.StatusOK, "Deleted")
 }
 
 // GetServerGroups 获取服务器组列表
 func GetServerGroups(c *gin.Context) {
-	core.Mutex.Lock()
-	defer core.Mutex.Unlock()
-
-	// 调用 ts3-go 的 ServerGroupList 方法
-	groups, err := core.Client.ServerGroupList(c.Request.Context())
+	groups, err := core.WithTS3Value(func(ts3Client *ts3.Client) ([]ts3models.ServerGroup, error) {
+		return ts3Client.ServerGroupList(c.Request.Context())
+	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"data": groups})
 }
 
 // DeleteServerGroup 删除服务器组
 func DeleteServerGroup(c *gin.Context) {
-	sgid := c.Param("sgid")
-	force := c.DefaultQuery("force", "1") // 1=强制删除
-
-	core.Mutex.Lock()
-	defer core.Mutex.Unlock()
-
-	// 构造命令: servergroupdel sgid=xxx force=1
-	cmd := fmt.Sprintf("servergroupdel sgid=%s force=%s", sgid, force)
-	if _, err := core.Client.Exec(c.Request.Context(), cmd); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	sgid, ok := parsePathInt(c, "sgid")
+	if !ok {
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"msg": "Server group deleted"})
+	force, ok := parseQueryIntWithDefault(c, "force", 1)
+	if !ok {
+		return
+	}
+
+	cmd := fmt.Sprintf("servergroupdel sgid=%d force=%d", sgid, force)
+	err := core.WithTS3(func(ts3Client *ts3.Client) error {
+		_, err := ts3Client.Exec(c.Request.Context(), cmd)
+		return err
+	})
+	if err != nil {
+		jsonError(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	jsonMessage(c, http.StatusOK, "Server group deleted")
 }

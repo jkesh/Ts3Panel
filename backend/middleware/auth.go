@@ -10,13 +10,13 @@ import (
 
 func AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		header := c.GetHeader("Authorization")
+		header := strings.TrimSpace(c.GetHeader("Authorization"))
 		if header == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
 			return
 		}
 
-		parts := strings.Split(header, " ")
+		parts := strings.SplitN(header, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid header format"})
 			return

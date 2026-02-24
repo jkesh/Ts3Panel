@@ -9,25 +9,22 @@ import (
 
 func Setup() *gin.Engine {
 	r := gin.Default()
+	r.Use(middleware.CORS())
 
-	// CORS
-	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-		c.Next()
-	})
+	registerAuthRoutes(r)
+	registerAPIRoutes(r)
+	return r
+}
 
+func registerAuthRoutes(r *gin.Engine) {
 	auth := r.Group("/auth")
 	{
 		auth.POST("/login", api.Login)
 		auth.POST("/register", api.Register)
 	}
+}
 
+func registerAPIRoutes(r *gin.Engine) {
 	apiV1 := r.Group("/api/v1")
 	apiV1.Use(middleware.AuthRequired())
 	{
@@ -65,6 +62,4 @@ func Setup() *gin.Engine {
 		apiV1.DELETE("/bot/:id", api.DeleteBot)
 		apiV1.POST("/bot/:id/command", api.SendCommand) // 核心控制接口
 	}
-
-	return r
 }

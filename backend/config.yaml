@@ -6,6 +6,7 @@ ts3:
   protocol: "tcp"       # "tcp" (Raw) 或 "ssh" (TS3 3.3+)
   host: "43.131.41.101"
   port: 10011           # TCP 默认 10011, SSH 默认 10022
+  server_id: 1          # 虚拟服务器 ID（对应 `use sid=1`）
   user: "serveradmin"
   password: "jkesh1024"
 

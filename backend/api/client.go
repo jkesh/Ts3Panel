@@ -3,48 +3,51 @@ package api
 import (
 	"Ts3Panel/core"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jkesh/ts3-go/ts3"
+	ts3models "github.com/jkesh/ts3-go/ts3/models"
 )
 
+type kickClientReq struct {
+	Reason string `json:"reason"`
+}
+
 func ListClients(c *gin.Context) {
-	core.Mutex.Lock()
-	defer core.Mutex.Unlock()
-	clients, err := core.Client.ClientList(c.Request.Context(), "-uid", "-away", "-groups")
+	clients, err := core.WithTS3Value(func(ts3Client *ts3.Client) ([]ts3models.OnlineClient, error) {
+		return ts3Client.ClientList(c.Request.Context(), "-uid", "-away", "-groups")
+	})
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(200, clients)
+	c.JSON(http.StatusOK, clients)
 }
 
 func KickClient(c *gin.Context) {
-	// 1. 权限检查
-	role := c.GetString("role")
-	if role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied: Admins only"})
+	if !ensureAdmin(c) {
 		return
 	}
 
-	idStr := c.Param("id")
+	clid, ok := parsePathInt(c, "id")
+	if !ok {
+		return
+	}
 
-	uID, err := strconv.ParseUint(idStr, 10, 64)
+	var req kickClientReq
+	_ = c.ShouldBindJSON(&req)
+	reason := req.Reason
+	if reason == "" {
+		reason = "Kicked by WebAdmin"
+	}
+
+	err := core.WithTS3(func(ts3Client *ts3.Client) error {
+		return ts3Client.KickFromServer(c.Request.Context(), clid, reason)
+	})
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid Client ID format"})
+		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// 转换为 int 传递给 TS3 库 (如果是 2^64-1，转为 int 会变成 -1，这是符合底层逻辑的)
-	id := int(uID)
-
-	core.Mutex.Lock()
-	defer core.Mutex.Unlock()
-	// 2. 执行踢出
-	err = core.Client.KickFromServer(c.Request.Context(), id, "Kicked by WebAdmin")
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(200, gin.H{"msg": "Kicked"})
+	jsonMessage(c, http.StatusOK, "Kicked")
 }

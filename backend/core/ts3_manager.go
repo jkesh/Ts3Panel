@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -18,22 +20,31 @@ func (l *DebugLogger) Printf(format string, v ...interface{}) { log.Printf(forma
 func (l *DebugLogger) Debug(v ...interface{})                 { log.Print(v...) }
 func (l *DebugLogger) Debugf(format string, v ...interface{}) { log.Printf(format, v...) }
 
+type SSEMessage struct {
+	Type string
+	Data string
+}
+
 var (
-	Client  *ts3.Client
-	Mutex   sync.Mutex // [新增] 添加全局锁
-	once    sync.Once
-	sseChan = make(chan map[string]string, 100)
+	client           *ts3.Client
+	clientMu         sync.Mutex
+	once             sync.Once
+	initErr          error
+	ErrClientDown    = errors.New("ts3 client is not initialized")
+	sseMu            sync.RWMutex
+	sseSubscribers   = make(map[int]chan SSEMessage)
+	nextSubscriberID int
 )
 
-func InitTS3() {
+func InitTS3() error {
 	once.Do(func() {
 		conf := config.GlobalConfig.TS3
 
-		var err error
-		if conf.Protocol == "ssh" {
+		switch conf.Protocol {
+		case "ssh":
 			log.Println("[Core] Connecting via SSH...")
-			Client, err = ts3.NewSSHClient(conf.Host, conf.Port, conf.User, conf.Password)
-		} else {
+			client, initErr = ts3.NewSSHClient(conf.Host, conf.Port, conf.User, conf.Password)
+		case "tcp":
 			log.Println("[Core] Connecting via TCP (Raw)...")
 			cfg := ts3.Config{
 				Host:            conf.Host,
@@ -41,51 +52,109 @@ func InitTS3() {
 				Timeout:         10 * time.Second,
 				KeepAlivePeriod: 1 * time.Minute,
 			}
-			Client, err = ts3.NewClient(cfg)
+			client, initErr = ts3.NewClient(cfg)
+		default:
+			initErr = fmt.Errorf("unsupported ts3 protocol: %s", conf.Protocol)
 		}
 
-		if err != nil {
-			log.Fatalf("[Core] Connect failed: %v", err)
+		if initErr != nil {
+			return
 		}
+
 		log.Println("[Core] Connected. Waiting 1s before login...")
 		time.Sleep(1 * time.Second)
-		Client.SetLogger(&DebugLogger{})
+		client.SetLogger(&DebugLogger{})
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		if conf.Protocol == "tcp" {
-			if err := Client.Login(ctx, conf.User, conf.Password); err != nil {
-				log.Fatalf("[Core] Login failed: %v", err)
+			if err := client.Login(ctx, conf.User, conf.Password); err != nil {
+				initErr = fmt.Errorf("login failed: %w", err)
+				return
 			}
 		}
 
-		if err := Client.Use(ctx, 1); err != nil {
-			log.Fatalf("[Core] Select server failed: %v", err)
+		if err := client.Use(ctx, conf.ServerID); err != nil {
+			initErr = fmt.Errorf("select server %d failed: %w", conf.ServerID, err)
+			return
 		}
 
 		go registerEvents()
 		log.Println("[Core] TS3 Service Ready.")
 	})
+	return initErr
 }
 
 func registerEvents() {
 	ctx := context.Background()
-	_ = Client.OnTextMessage(ctx, func(msg string) {
+	if err := client.OnTextMessage(ctx, func(msg string) {
 		BroadcastToSSE("message", msg)
-	})
-	_ = Client.OnClientEnter(ctx, func(msg string) {
+	}); err != nil {
+		log.Printf("[Core] register text event failed: %v", err)
+	}
+	if err := client.OnClientEnter(ctx, func(msg string) {
 		BroadcastToSSE("enter", msg)
-	})
-}
-
-func BroadcastToSSE(evtType, msg string) {
-	select {
-	case sseChan <- map[string]string{"type": evtType, "data": msg}:
-	default:
+	}); err != nil {
+		log.Printf("[Core] register enter event failed: %v", err)
 	}
 }
 
-func GetSSEChannel() <-chan map[string]string {
-	return sseChan
+func BroadcastToSSE(evtType, msg string) {
+	event := SSEMessage{Type: evtType, Data: msg}
+
+	sseMu.RLock()
+	defer sseMu.RUnlock()
+
+	for _, sub := range sseSubscribers {
+		select {
+		case sub <- event:
+		default:
+		}
+	}
+}
+
+func SubscribeSSE() (int, <-chan SSEMessage) {
+	sseMu.Lock()
+	defer sseMu.Unlock()
+
+	nextSubscriberID++
+	id := nextSubscriberID
+	ch := make(chan SSEMessage, 64)
+	sseSubscribers[id] = ch
+	return id, ch
+}
+
+func UnsubscribeSSE(id int) {
+	sseMu.Lock()
+	defer sseMu.Unlock()
+
+	ch, ok := sseSubscribers[id]
+	if !ok {
+		return
+	}
+	delete(sseSubscribers, id)
+	close(ch)
+}
+
+// WithTS3 ensures calls run under a single critical section and with initialized client.
+func WithTS3(fn func(c *ts3.Client) error) error {
+	clientMu.Lock()
+	defer clientMu.Unlock()
+
+	if client == nil {
+		return ErrClientDown
+	}
+	return fn(client)
+}
+
+func WithTS3Value[T any](fn func(c *ts3.Client) (T, error)) (T, error) {
+	clientMu.Lock()
+	defer clientMu.Unlock()
+
+	var zero T
+	if client == nil {
+		return zero, ErrClientDown
+	}
+	return fn(client)
 }

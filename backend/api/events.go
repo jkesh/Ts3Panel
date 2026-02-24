@@ -15,10 +15,10 @@ func StreamEvents(c *gin.Context) {
 	c.Writer.Header().Set("Connection", "keep-alive")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 
-	stream := core.GetSSEChannel()
+	subID, stream := core.SubscribeSSE()
+	defer core.UnsubscribeSSE(subID)
 
-	// 监听客户端断开连接
-	clientGone := c.Writer.CloseNotify()
+	clientGone := c.Request.Context().Done()
 
 	c.Stream(func(w io.Writer) bool {
 		select {
@@ -29,7 +29,7 @@ func StreamEvents(c *gin.Context) {
 				return false // 通道关闭
 			}
 			// 发送事件: type, data
-			c.SSEvent(msg["type"], msg["data"])
+			c.SSEvent(msg.Type, msg.Data)
 			return true
 		}
 	})

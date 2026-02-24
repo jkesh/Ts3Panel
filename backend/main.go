@@ -10,17 +10,25 @@ import (
 
 func main() {
 	// 1. 加载配置
-	config.LoadConfig()
+	if err := config.LoadConfig(); err != nil {
+		log.Fatalf("config load failed: %v", err)
+	}
 
 	// 2. 初始化数据库
-	database.InitDB()
+	if err := database.InitDB(); err != nil {
+		log.Fatalf("database init failed: %v", err)
+	}
 
 	// 3. 初始化 TS3 连接
-	core.InitTS3()
+	if err := core.InitTS3(); err != nil {
+		log.Fatalf("ts3 init failed: %v", err)
+	}
 
 	// 4. 启动 Web 服务
 	r := router.Setup()
 	port := config.GlobalConfig.App.Port
 	log.Printf("Starting server on %s", port)
-	r.Run(port)
+	if err := r.Run(port); err != nil {
+		log.Fatalf("server start failed: %v", err)
+	}
 }
