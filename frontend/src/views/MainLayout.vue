@@ -14,6 +14,10 @@
           <el-icon><Odometer /></el-icon>
           <span>仪表盘</span>
         </el-menu-item>
+        <el-menu-item index="/server-management">
+          <el-icon><Setting /></el-icon>
+          <span>服务器管理</span>
+        </el-menu-item>
         <el-menu-item index="/channels">
           <el-icon><Monitor /></el-icon>
           <span>频道管理</span>
@@ -54,7 +58,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Odometer, Monitor, UserFilled, Lock, Headset } from '@element-plus/icons-vue'
+import { Odometer, Monitor, UserFilled, Lock, Headset, Setting } from '@element-plus/icons-vue'
 const route = useRoute()
 const router = useRouter()
 
