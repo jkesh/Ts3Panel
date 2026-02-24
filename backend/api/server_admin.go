@@ -60,7 +60,8 @@ func ListTempPasswords(c *gin.Context) {
 		return ts3Client.ServerTempPasswordList(c.Request.Context())
 	})
 	if err != nil {
-		if isTS3DatabaseEmpty(err) {
+		var ts3Err *ts3.Error
+		if errors.As(err, &ts3Err) && ts3Err.Is(ts3.ErrDatabaseEmptyResult) {
 			c.JSON(http.StatusOK, gin.H{"data": []any{}})
 			return
 		}
@@ -131,10 +132,6 @@ func ListQueryLogins(c *gin.Context) {
 		return ts3Client.QueryLoginList(c.Request.Context())
 	})
 	if err != nil {
-		if isTS3DatabaseEmpty(err) {
-			c.JSON(http.StatusOK, gin.H{"data": []any{}})
-			return
-		}
 		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -232,18 +229,4 @@ func RemoveServerGroupClient(c *gin.Context) {
 	}
 
 	jsonMessage(c, http.StatusOK, "Client removed from server group")
-}
-
-func isTS3DatabaseEmpty(err error) bool {
-	for err != nil {
-		if ts3Err, ok := err.(*ts3.Error); ok && ts3Err.Is(ts3.ErrDatabaseEmptyResult) {
-			return true
-		}
-		unwrapper, ok := err.(interface{ Unwrap() error })
-		if !ok {
-			break
-		}
-		err = unwrapper.Unwrap()
-	}
-	return false
 }
