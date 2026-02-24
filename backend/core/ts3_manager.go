@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,6 +41,7 @@ var (
 func InitTS3() error {
 	once.Do(func() {
 		conf := config.GlobalConfig.TS3
+		activeProtocol := conf.Protocol
 		runtimeCfg := ts3.Config{
 			Host:            conf.Host,
 			Port:            conf.Port,
@@ -54,6 +57,41 @@ func InitTS3() error {
 			}
 			log.Println("[Core] Connecting via SSH...")
 			client, initErr = ts3.NewSSHClientWithConfig(conf.Host, conf.Port, conf.User, conf.Password, runtimeCfg)
+			if initErr != nil && shouldFallbackToSSH(initErr) && conf.FallbackProtocol != "" {
+				fallbackHost := conf.FallbackHost
+				fallbackPort := conf.FallbackPort
+				if fallbackHost == "" || fallbackPort == 0 {
+					initErr = fmt.Errorf("ts3 ssh fallback requires fallback_host/fallback_port config")
+					return
+				}
+
+				switch conf.FallbackProtocol {
+				case "ssh":
+					if fallbackHost == conf.Host && fallbackPort == conf.Port {
+						initErr = fmt.Errorf("ssh handshake failed on %s:%d and fallback target is identical; please change fallback_host/fallback_port or set fallback_protocol=tcp: %w", conf.Host, conf.Port, initErr)
+						return
+					}
+					log.Printf("[Core] SSH handshake failed (%v), fallback to SSH on %s:%d (from config)...", initErr, fallbackHost, fallbackPort)
+					runtimeCfg.Host = fallbackHost
+					runtimeCfg.Port = fallbackPort
+					client, initErr = ts3.NewSSHClientWithConfig(fallbackHost, fallbackPort, conf.User, conf.Password, runtimeCfg)
+					if initErr == nil {
+						activeProtocol = "ssh"
+						log.Println("[Core] SSH fallback connected successfully.")
+					}
+				case "tcp":
+					log.Printf("[Core] SSH handshake failed (%v), fallback to TCP on %s:%d (from config)...", initErr, fallbackHost, fallbackPort)
+					runtimeCfg.Host = fallbackHost
+					runtimeCfg.Port = fallbackPort
+					client, initErr = ts3.NewClient(runtimeCfg)
+					if initErr == nil {
+						activeProtocol = "tcp"
+						log.Println("[Core] TCP fallback connected successfully.")
+					}
+				default:
+					initErr = fmt.Errorf("unsupported ts3 fallback protocol: %s", conf.FallbackProtocol)
+				}
+			}
 		case "tcp":
 			if conf.User == "" || conf.Password == "" {
 				initErr = errors.New("ts3 tcp requires user/password")
@@ -62,22 +100,7 @@ func InitTS3() error {
 			log.Println("[Core] Connecting via TCP (Raw)...")
 			client, initErr = ts3.NewClient(runtimeCfg)
 		case "webquery":
-			if conf.APIKey == "" {
-				initErr = errors.New("ts3 webquery requires api_key")
-				return
-			}
-			log.Println("[Core] Connecting via HTTP WebQuery...")
-			wqCfg := ts3.WebQueryConfig{
-				Host:            conf.Host,
-				Port:            conf.Port,
-				HTTPS:           conf.HTTPS,
-				APIKey:          conf.APIKey,
-				BasePath:        conf.BasePath,
-				Timeout:         10 * time.Second,
-				KeepAlivePeriod: 1 * time.Minute,
-				VirtualServerID: conf.ServerID,
-			}
-			client, initErr = ts3.NewWebQueryClient(wqCfg)
+			initErr = errors.New("ts3 webquery is disabled; please use ssh protocol")
 		default:
 			initErr = fmt.Errorf("unsupported ts3 protocol: %s", conf.Protocol)
 		}
@@ -92,7 +115,7 @@ func InitTS3() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		if conf.Protocol == "tcp" {
+		if activeProtocol == "tcp" {
 			if err := client.Login(ctx, conf.User, conf.Password); err != nil {
 				initErr = fmt.Errorf("login failed: %w", err)
 				return
@@ -104,7 +127,7 @@ func InitTS3() error {
 			return
 		}
 
-		if conf.Protocol != "webquery" {
+		if activeProtocol != "webquery" {
 			go registerEvents()
 		} else {
 			log.Println("[Core] WebQuery mode: event subscribe is disabled.")
@@ -112,6 +135,17 @@ func InitTS3() error {
 		log.Println("[Core] TS3 Service Ready.")
 	})
 	return initErr
+}
+
+func shouldFallbackToSSH(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "handshake failed: eof")
 }
 
 func registerEvents() {
