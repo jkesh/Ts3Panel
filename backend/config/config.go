@@ -81,7 +81,7 @@ func LoadConfig() error {
 		cfg.TS3.ServerID = 1
 	}
 	if cfg.TS3.Protocol == "" {
-		cfg.TS3.Protocol = "webquery"
+		cfg.TS3.Protocol = "ssh"
 	}
 	cfg.TS3.Protocol = strings.ToLower(strings.TrimSpace(cfg.TS3.Protocol))
 	cfg.TS3.FallbackProtocol = strings.ToLower(strings.TrimSpace(cfg.TS3.FallbackProtocol))
@@ -100,12 +100,12 @@ func LoadConfig() error {
 		}
 	}
 	if cfg.TS3.FallbackProtocol == "" {
-		cfg.TS3.FallbackProtocol = "tcp"
+		cfg.TS3.FallbackProtocol = "ssh"
 	}
 	if cfg.TS3.FallbackHost == "" {
 		cfg.TS3.FallbackHost = cfg.TS3.Host
 	}
-	if cfg.TS3.FallbackPort == 0 && cfg.TS3.FallbackProtocol == "tcp" {
+	if cfg.TS3.FallbackPort == 0 && cfg.TS3.FallbackProtocol == "ssh" {
 		cfg.TS3.FallbackPort = cfg.TS3.Port
 	}
 	if cfg.App.Port == "" {

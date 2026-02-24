@@ -57,21 +57,21 @@ func InitTS3() error {
 			}
 			log.Println("[Core] Connecting via SSH...")
 			client, initErr = ts3.NewSSHClientWithConfig(conf.Host, conf.Port, conf.User, conf.Password, runtimeCfg)
-			if initErr != nil && shouldFallbackToTCP(initErr) && conf.FallbackProtocol == "tcp" {
+			if initErr != nil && shouldFallbackToSSH(initErr) && conf.FallbackProtocol == "ssh" {
 				fallbackHost := conf.FallbackHost
 				fallbackPort := conf.FallbackPort
 				if fallbackHost == "" || fallbackPort == 0 {
-					initErr = fmt.Errorf("ts3 ssh fallback tcp requires fallback_host/fallback_port config")
+					initErr = fmt.Errorf("ts3 ssh fallback requires fallback_host/fallback_port config")
 					return
 				}
 
-				log.Printf("[Core] SSH handshake failed (%v), fallback to TCP Raw on %s:%d (from config)...", initErr, fallbackHost, fallbackPort)
+				log.Printf("[Core] SSH handshake failed (%v), fallback to SSH on %s:%d (from config)...", initErr, fallbackHost, fallbackPort)
 				runtimeCfg.Host = fallbackHost
 				runtimeCfg.Port = fallbackPort
-				client, initErr = ts3.NewClient(runtimeCfg)
+				client, initErr = ts3.NewSSHClientWithConfig(fallbackHost, fallbackPort, conf.User, conf.Password, runtimeCfg)
 				if initErr == nil {
-					activeProtocol = "tcp"
-					log.Println("[Core] TCP fallback connected successfully.")
+					activeProtocol = "ssh"
+					log.Println("[Core] SSH fallback connected successfully.")
 				}
 			}
 		case "tcp":
@@ -82,22 +82,7 @@ func InitTS3() error {
 			log.Println("[Core] Connecting via TCP (Raw)...")
 			client, initErr = ts3.NewClient(runtimeCfg)
 		case "webquery":
-			if conf.APIKey == "" {
-				initErr = errors.New("ts3 webquery requires api_key")
-				return
-			}
-			log.Println("[Core] Connecting via HTTP WebQuery...")
-			wqCfg := ts3.WebQueryConfig{
-				Host:            conf.Host,
-				Port:            conf.Port,
-				HTTPS:           conf.HTTPS,
-				APIKey:          conf.APIKey,
-				BasePath:        conf.BasePath,
-				Timeout:         10 * time.Second,
-				KeepAlivePeriod: 1 * time.Minute,
-				VirtualServerID: conf.ServerID,
-			}
-			client, initErr = ts3.NewWebQueryClient(wqCfg)
+			initErr = errors.New("ts3 webquery is disabled; please use ssh protocol")
 		default:
 			initErr = fmt.Errorf("unsupported ts3 protocol: %s", conf.Protocol)
 		}
@@ -134,7 +119,7 @@ func InitTS3() error {
 	return initErr
 }
 
-func shouldFallbackToTCP(err error) bool {
+func shouldFallbackToSSH(err error) bool {
 	if err == nil {
 		return false
 	}

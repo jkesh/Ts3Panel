@@ -12,9 +12,9 @@ ts3:
   api_key: ""           # webquery 必填
   https: false          # webquery + TLS 时设为 true
   base_path: ""         # 可选: 例如 "query"
-  fallback_protocol: "tcp"  # ssh 握手 EOF 时的回退协议，当前仅支持 "tcp"
+  fallback_protocol: "ssh"  # ssh 握手 EOF 时的回退协议，当前仅支持 "ssh"
   fallback_host: "115.159.58.72" # 回退目标主机（从配置读取）
-  fallback_port: 10011            # 回退目标端口（从配置读取）
+  fallback_port: 10022            # 回退目标端口（从配置读取）
 
 # 新增数据库配置
 database:
