@@ -60,6 +60,11 @@ func ListTempPasswords(c *gin.Context) {
 		return ts3Client.ServerTempPasswordList(c.Request.Context())
 	})
 	if err != nil {
+		var ts3Err *ts3.Error
+		if errors.As(err, &ts3Err) && ts3Err.Is(ts3.ErrDatabaseEmptyResult) {
+			c.JSON(http.StatusOK, gin.H{"data": []any{}})
+			return
+		}
 		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
