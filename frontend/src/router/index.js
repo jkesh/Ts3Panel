@@ -7,6 +7,7 @@ import ChannelManager from '../views/ChannelManager.vue'
 import GroupManager from '../views/GroupManager.vue'
 import BanManager from "../views/BanManager.vue";
 import BotManager from "../views/BotManager.vue";
+import ServerManager from '../views/ServerManager.vue'
 
 const router = createRouter({
     history: createWebHistory(),
@@ -20,6 +21,7 @@ const router = createRouter({
             children: [
                 { path: '', redirect: '/dashboard' },
                 { path: 'dashboard', component: Dashboard, meta: { title: '仪表盘' } },
+                { path: 'server-management', component: ServerManager, meta: { title: '服务器管理中心' } },
                 { path: 'channels', component: ChannelManager, meta: { title: '频道管理' } },
                 { path: 'groups', component: GroupManager, meta: { title: '权限组管理' } },
                 { path: 'bans', component: BanManager, meta: { title: '封禁管理' } },

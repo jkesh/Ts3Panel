@@ -29,10 +29,19 @@ func registerAPIRoutes(r *gin.Engine) {
 	apiV1.Use(middleware.AuthRequired())
 	{
 		apiV1.GET("/server", api.GetServerInfo)
+		apiV1.PUT("/server/settings", api.UpdateServerSettings)
 		apiV1.GET("/clients", api.ListClients)
 		apiV1.POST("/client/:id/kick", api.KickClient)
 		apiV1.GET("/events/stream", api.StreamEvents)
 		apiV1.POST("/broadcast", api.Broadcast)
+		apiV1.GET("/server/temp-passwords", api.ListTempPasswords)
+		apiV1.POST("/server/temp-passwords", api.CreateTempPassword)
+		apiV1.DELETE("/server/temp-passwords/:password", api.DeleteTempPassword)
+		apiV1.GET("/server/query-logins", api.ListQueryLogins)
+		apiV1.POST("/server/query-logins", api.CreateQueryLogin)
+		apiV1.DELETE("/server/query-logins/:cldbid", api.DeleteQueryLogin)
+		apiV1.POST("/server/group-client/add", api.AddServerGroupClient)
+		apiV1.POST("/server/group-client/remove", api.RemoveServerGroupClient)
 		apiV1.POST("/channel/create", api.CreateChannel) // 新建频道
 		apiV1.POST("/token/create", api.CreateToken)     // 生成 Token
 
