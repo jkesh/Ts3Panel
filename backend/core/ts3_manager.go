@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -54,6 +56,19 @@ func InitTS3() error {
 			}
 			log.Println("[Core] Connecting via SSH...")
 			client, initErr = ts3.NewSSHClientWithConfig(conf.Host, conf.Port, conf.User, conf.Password, runtimeCfg)
+			if initErr != nil && shouldFallbackToTCP(initErr) {
+				fallbackPort := conf.Port
+				if fallbackPort == 0 || fallbackPort == 10022 {
+					fallbackPort = 10011
+				}
+
+				log.Printf("[Core] SSH handshake failed (%v), fallback to TCP Raw on %s:%d...", initErr, conf.Host, fallbackPort)
+				runtimeCfg.Port = fallbackPort
+				client, initErr = ts3.NewClient(runtimeCfg)
+				if initErr == nil {
+					log.Println("[Core] TCP fallback connected successfully.")
+				}
+			}
 		case "tcp":
 			if conf.User == "" || conf.Password == "" {
 				initErr = errors.New("ts3 tcp requires user/password")
@@ -112,6 +127,17 @@ func InitTS3() error {
 		log.Println("[Core] TS3 Service Ready.")
 	})
 	return initErr
+}
+
+func shouldFallbackToTCP(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "handshake failed: eof")
 }
 
 func registerEvents() {
