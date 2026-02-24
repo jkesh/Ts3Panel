@@ -2,12 +2,12 @@ package api
 
 import (
 	"Ts3Panel/core"
-	"fmt"
+	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jkesh/ts3-go/ts3"
+	ts3models "github.com/jkesh/ts3-go/ts3/models"
 )
 
 type CreateChannelReq struct {
@@ -24,11 +24,11 @@ type CreateTokenReq struct {
 }
 
 type ServerGroupPerm struct {
-	PermID  int    `ts3:"permid" json:"permid"`
-	Name    string `ts3:"permsid" json:"name"`
-	Value   int    `ts3:"permvalue" json:"value"`
-	Negated int    `ts3:"permnegated" json:"negated"`
-	Skip    int    `ts3:"permskip" json:"skip"`
+	PermID  int    `json:"permid"`
+	Name    string `json:"name"`
+	Value   int    `json:"value"`
+	Negated int    `json:"negated"`
+	Skip    int    `json:"skip"`
 }
 
 // ListServerGroupPerms 获取服务器组的当前权限列表
@@ -38,23 +38,28 @@ func ListServerGroupPerms(c *gin.Context) {
 		return
 	}
 
-	cmd := fmt.Sprintf("servergrouppermlist sgid=%d -names", sgid)
-	resp, err := core.WithTS3Value(func(ts3Client *ts3.Client) (string, error) {
-		return ts3Client.Exec(c.Request.Context(), cmd)
+	rawPerms, err := core.WithTS3Value(func(ts3Client *ts3.Client) ([]ts3models.PermissionEntry, error) {
+		return ts3Client.ServerGroupPermList(c.Request.Context(), sgid, true)
 	})
 	if err != nil {
+		var ts3Err *ts3.Error
+		if errors.As(err, &ts3Err) && ts3Err.Is(ts3.ErrDatabaseEmptyResult) {
+			c.JSON(http.StatusOK, gin.H{"data": []ServerGroupPerm{}})
+			return
+		}
 		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if strings.TrimSpace(resp) == "" {
-		c.JSON(http.StatusOK, gin.H{"data": []ServerGroupPerm{}})
-		return
-	}
 
-	var perms []ServerGroupPerm
-	if err := ts3.NewDecoder().Decode(resp, &perms); err != nil {
-		c.JSON(http.StatusOK, gin.H{"data": []ServerGroupPerm{}})
-		return
+	perms := make([]ServerGroupPerm, 0, len(rawPerms))
+	for _, p := range rawPerms {
+		perms = append(perms, ServerGroupPerm{
+			PermID:  p.PermID,
+			Name:    p.PermSID,
+			Value:   p.PermValue,
+			Negated: p.PermNegated,
+			Skip:    p.PermSkip,
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": perms})
@@ -68,30 +73,23 @@ func CreateChannel(c *gin.Context) {
 		return
 	}
 
-	var b strings.Builder
-	b.WriteString("channelcreate")
-	b.WriteString(" channel_name=")
-	b.WriteString(ts3.Escape(req.Name))
-	if req.Password != "" {
-		b.WriteString(" channel_password=")
-		b.WriteString(ts3.Escape(req.Password))
-	}
-	if req.Topic != "" {
-		b.WriteString(" channel_topic=")
-		b.WriteString(ts3.Escape(req.Topic))
-	}
-	b.WriteString(" channel_flag_permanent=1")
-
-	err := core.WithTS3(func(ts3Client *ts3.Client) error {
-		_, err := ts3Client.Exec(c.Request.Context(), b.String())
-		return err
+	cid, err := core.WithTS3Value(func(ts3Client *ts3.Client) (int, error) {
+		return ts3Client.ChannelCreate(c.Request.Context(), ts3.ChannelCreateOptions{
+			Name:        req.Name,
+			Password:    req.Password,
+			Topic:       req.Topic,
+			IsPermanent: true,
+		})
 	})
 	if err != nil {
 		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	jsonMessage(c, http.StatusOK, "Channel created successfully")
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "Channel created successfully",
+		"cid": cid,
+	})
 }
 
 // CreateToken 生成权限密钥

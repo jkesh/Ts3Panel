@@ -2,12 +2,14 @@ package api
 
 import (
 	"Ts3Panel/core"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jkesh/ts3-go/ts3"
+	ts3models "github.com/jkesh/ts3-go/ts3/models"
 )
 
 type BanEntry struct {
@@ -31,23 +33,33 @@ type BanReq struct {
 
 // GetBanList 获取封禁列表
 func GetBanList(c *gin.Context) {
-	resp, err := core.WithTS3Value(func(ts3Client *ts3.Client) (string, error) {
-		return ts3Client.Exec(c.Request.Context(), "banlist")
+	rawBans, err := core.WithTS3Value(func(ts3Client *ts3.Client) ([]ts3models.BanEntry, error) {
+		return ts3Client.BanList(c.Request.Context())
 	})
 	if err != nil {
+		var ts3Err *ts3.Error
+		if errors.As(err, &ts3Err) && ts3Err.Is(ts3.ErrDatabaseEmptyResult) {
+			c.JSON(http.StatusOK, gin.H{"data": []BanEntry{}})
+			return
+		}
 		jsonError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if strings.TrimSpace(resp) == "" {
-		c.JSON(http.StatusOK, gin.H{"data": []BanEntry{}})
-		return
+
+	bans := make([]BanEntry, 0, len(rawBans))
+	for _, b := range rawBans {
+		bans = append(bans, BanEntry{
+			ID:       b.BanID,
+			IP:       b.IP,
+			Name:     b.Name,
+			UID:      b.UID,
+			Created:  b.Created,
+			Duration: b.Duration,
+			Invoker:  b.InvokerName,
+			Reason:   b.Reason,
+		})
 	}
 
-	var bans []BanEntry
-	if err := ts3.NewDecoder().Decode(resp, &bans); err != nil {
-		c.JSON(http.StatusOK, gin.H{"data": []BanEntry{}})
-		return
-	}
 	c.JSON(http.StatusOK, gin.H{"data": bans})
 }
 
@@ -98,10 +110,8 @@ func DeleteBan(c *gin.Context) {
 		return
 	}
 
-	cmd := fmt.Sprintf("bandel banid=%d", banID)
 	err := core.WithTS3(func(ts3Client *ts3.Client) error {
-		_, err := ts3Client.Exec(c.Request.Context(), cmd)
-		return err
+		return ts3Client.BanDelete(c.Request.Context(), banID)
 	})
 	if err != nil {
 		jsonError(c, http.StatusInternalServerError, err.Error())
@@ -114,8 +124,7 @@ func DeleteBan(c *gin.Context) {
 // DeleteAllBans 清空封禁
 func DeleteAllBans(c *gin.Context) {
 	err := core.WithTS3(func(ts3Client *ts3.Client) error {
-		_, err := ts3Client.Exec(c.Request.Context(), "bandelall")
-		return err
+		return ts3Client.BanDeleteAll(c.Request.Context())
 	})
 	if err != nil {
 		jsonError(c, http.StatusInternalServerError, err.Error())

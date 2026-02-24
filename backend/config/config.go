@@ -23,12 +23,15 @@ type DatabaseConfig struct {
 }
 
 type TS3Config struct {
-	Protocol string `mapstructure:"protocol"`
+	Protocol string `mapstructure:"protocol"` // tcp | ssh | webquery
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
 	User     string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
 	ServerID int    `mapstructure:"server_id"`
+	APIKey   string `mapstructure:"api_key"`
+	HTTPS    bool   `mapstructure:"https"`
+	BasePath string `mapstructure:"base_path"`
 }
 
 type Config struct {

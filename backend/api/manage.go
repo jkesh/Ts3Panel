@@ -2,7 +2,6 @@ package api
 
 import (
 	"Ts3Panel/core"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -110,10 +109,8 @@ func DeleteChannel(c *gin.Context) {
 		return
 	}
 
-	cmd := fmt.Sprintf("channeldelete cid=%d force=%d", cid, force)
 	err := core.WithTS3(func(ts3Client *ts3.Client) error {
-		_, err := ts3Client.Exec(c.Request.Context(), cmd)
-		return err
+		return ts3Client.ChannelDelete(c.Request.Context(), cid, force == 1)
 	})
 	if err != nil {
 		jsonError(c, http.StatusInternalServerError, err.Error())
@@ -147,10 +144,8 @@ func DeleteServerGroup(c *gin.Context) {
 		return
 	}
 
-	cmd := fmt.Sprintf("servergroupdel sgid=%d force=%d", sgid, force)
 	err := core.WithTS3(func(ts3Client *ts3.Client) error {
-		_, err := ts3Client.Exec(c.Request.Context(), cmd)
-		return err
+		return ts3Client.ServerGroupDelete(c.Request.Context(), sgid, force == 1)
 	})
 	if err != nil {
 		jsonError(c, http.StatusInternalServerError, err.Error())

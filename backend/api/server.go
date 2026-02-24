@@ -1,10 +1,9 @@
 package api
 
 import (
+	"Ts3Panel/config"
 	"Ts3Panel/core"
-	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jkesh/ts3-go/ts3"
@@ -22,16 +21,36 @@ type serverInfoResp struct {
 
 // GetServerInfo 获取服务器信息
 func GetServerInfo(c *gin.Context) {
-	var info serverInfoResp
-	err := core.WithTS3(func(ts3Client *ts3.Client) error {
-		resp, err := ts3Client.Exec(c.Request.Context(), "serverinfo")
+	info, err := core.WithTS3Value(func(ts3Client *ts3.Client) (serverInfoResp, error) {
+		raw, err := ts3Client.ServerInfo(c.Request.Context())
 		if err != nil {
-			return err
+			return serverInfoResp{}, err
 		}
-		if strings.TrimSpace(resp) == "" {
-			return errors.New("empty response from server")
+
+		out := serverInfoResp{
+			Name:       raw.Name,
+			Version:    raw.Version,
+			Platform:   raw.Platform,
+			MaxClients: raw.MaxClients,
+			Uptime:     raw.Uptime,
 		}
-		return ts3.NewDecoder().Decode(resp, &info)
+
+		servers, err := ts3Client.ServerList(c.Request.Context())
+		if err == nil {
+			targetSID := raw.ID
+			if targetSID == 0 {
+				targetSID = config.GlobalConfig.TS3.ServerID
+			}
+			for _, s := range servers {
+				if s.ID == targetSID {
+					out.ClientsOnline = s.ClientsOnline
+					out.Status = s.Status
+					break
+				}
+			}
+		}
+
+		return out, nil
 	})
 	if err != nil {
 		jsonError(c, http.StatusInternalServerError, err.Error())

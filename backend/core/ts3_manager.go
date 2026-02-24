@@ -39,20 +39,33 @@ var (
 func InitTS3() error {
 	once.Do(func() {
 		conf := config.GlobalConfig.TS3
+		runtimeCfg := ts3.Config{
+			Host:            conf.Host,
+			Port:            conf.Port,
+			Timeout:         10 * time.Second,
+			KeepAlivePeriod: 1 * time.Minute,
+		}
 
 		switch conf.Protocol {
 		case "ssh":
 			log.Println("[Core] Connecting via SSH...")
-			client, initErr = ts3.NewSSHClient(conf.Host, conf.Port, conf.User, conf.Password)
+			client, initErr = ts3.NewSSHClientWithConfig(conf.Host, conf.Port, conf.User, conf.Password, runtimeCfg)
 		case "tcp":
 			log.Println("[Core] Connecting via TCP (Raw)...")
-			cfg := ts3.Config{
+			client, initErr = ts3.NewClient(runtimeCfg)
+		case "webquery":
+			log.Println("[Core] Connecting via WebQuery...")
+			wqCfg := ts3.WebQueryConfig{
 				Host:            conf.Host,
 				Port:            conf.Port,
+				HTTPS:           conf.HTTPS,
+				APIKey:          conf.APIKey,
+				BasePath:        conf.BasePath,
 				Timeout:         10 * time.Second,
 				KeepAlivePeriod: 1 * time.Minute,
+				VirtualServerID: conf.ServerID,
 			}
-			client, initErr = ts3.NewClient(cfg)
+			client, initErr = ts3.NewWebQueryClient(wqCfg)
 		default:
 			initErr = fmt.Errorf("unsupported ts3 protocol: %s", conf.Protocol)
 		}
@@ -61,8 +74,7 @@ func InitTS3() error {
 			return
 		}
 
-		log.Println("[Core] Connected. Waiting 1s before login...")
-		time.Sleep(1 * time.Second)
+		log.Println("[Core] Connected.")
 		client.SetLogger(&DebugLogger{})
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -80,7 +92,11 @@ func InitTS3() error {
 			return
 		}
 
-		go registerEvents()
+		if conf.Protocol != "webquery" {
+			go registerEvents()
+		} else {
+			log.Println("[Core] WebQuery mode: event subscribe is disabled.")
+		}
 		log.Println("[Core] TS3 Service Ready.")
 	})
 	return initErr
