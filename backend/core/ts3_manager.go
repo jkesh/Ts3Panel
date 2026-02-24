@@ -57,7 +57,7 @@ func InitTS3() error {
 			}
 			log.Println("[Core] Connecting via SSH...")
 			client, initErr = ts3.NewSSHClientWithConfig(conf.Host, conf.Port, conf.User, conf.Password, runtimeCfg)
-			if initErr != nil && shouldFallbackToSSH(initErr) && conf.FallbackProtocol == "ssh" {
+			if initErr != nil && shouldFallbackToSSH(initErr) && conf.FallbackProtocol != "" {
 				fallbackHost := conf.FallbackHost
 				fallbackPort := conf.FallbackPort
 				if fallbackHost == "" || fallbackPort == 0 {
@@ -65,13 +65,31 @@ func InitTS3() error {
 					return
 				}
 
-				log.Printf("[Core] SSH handshake failed (%v), fallback to SSH on %s:%d (from config)...", initErr, fallbackHost, fallbackPort)
-				runtimeCfg.Host = fallbackHost
-				runtimeCfg.Port = fallbackPort
-				client, initErr = ts3.NewSSHClientWithConfig(fallbackHost, fallbackPort, conf.User, conf.Password, runtimeCfg)
-				if initErr == nil {
-					activeProtocol = "ssh"
-					log.Println("[Core] SSH fallback connected successfully.")
+				switch conf.FallbackProtocol {
+				case "ssh":
+					if fallbackHost == conf.Host && fallbackPort == conf.Port {
+						initErr = fmt.Errorf("ssh handshake failed on %s:%d and fallback target is identical; please change fallback_host/fallback_port or set fallback_protocol=tcp: %w", conf.Host, conf.Port, initErr)
+						return
+					}
+					log.Printf("[Core] SSH handshake failed (%v), fallback to SSH on %s:%d (from config)...", initErr, fallbackHost, fallbackPort)
+					runtimeCfg.Host = fallbackHost
+					runtimeCfg.Port = fallbackPort
+					client, initErr = ts3.NewSSHClientWithConfig(fallbackHost, fallbackPort, conf.User, conf.Password, runtimeCfg)
+					if initErr == nil {
+						activeProtocol = "ssh"
+						log.Println("[Core] SSH fallback connected successfully.")
+					}
+				case "tcp":
+					log.Printf("[Core] SSH handshake failed (%v), fallback to TCP on %s:%d (from config)...", initErr, fallbackHost, fallbackPort)
+					runtimeCfg.Host = fallbackHost
+					runtimeCfg.Port = fallbackPort
+					client, initErr = ts3.NewClient(runtimeCfg)
+					if initErr == nil {
+						activeProtocol = "tcp"
+						log.Println("[Core] TCP fallback connected successfully.")
+					}
+				default:
+					initErr = fmt.Errorf("unsupported ts3 fallback protocol: %s", conf.FallbackProtocol)
 				}
 			}
 		case "tcp":

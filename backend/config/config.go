@@ -33,7 +33,7 @@ type TS3Config struct {
 	APIKey           string `mapstructure:"api_key"`
 	HTTPS            bool   `mapstructure:"https"`
 	BasePath         string `mapstructure:"base_path"`
-	FallbackProtocol string `mapstructure:"fallback_protocol"` // empty | tcp
+	FallbackProtocol string `mapstructure:"fallback_protocol"` // empty | ssh | tcp
 	FallbackHost     string `mapstructure:"fallback_host"`
 	FallbackPort     int    `mapstructure:"fallback_port"`
 }
@@ -99,14 +99,22 @@ func LoadConfig() error {
 			cfg.TS3.Port = 10011
 		}
 	}
-	if cfg.TS3.FallbackProtocol == "" {
-		cfg.TS3.FallbackProtocol = "ssh"
-	}
 	if cfg.TS3.FallbackHost == "" {
 		cfg.TS3.FallbackHost = cfg.TS3.Host
 	}
-	if cfg.TS3.FallbackPort == 0 && cfg.TS3.FallbackProtocol == "ssh" {
-		cfg.TS3.FallbackPort = cfg.TS3.Port
+	switch cfg.TS3.FallbackProtocol {
+	case "", "ssh", "tcp":
+	default:
+		log.Printf("[Config] Warning: unknown ts3.fallback_protocol=%q, fallback disabled", cfg.TS3.FallbackProtocol)
+		cfg.TS3.FallbackProtocol = ""
+	}
+	if cfg.TS3.FallbackPort == 0 {
+		switch cfg.TS3.FallbackProtocol {
+		case "ssh":
+			cfg.TS3.FallbackPort = cfg.TS3.Port
+		case "tcp":
+			cfg.TS3.FallbackPort = 10011
+		}
 	}
 	if cfg.App.Port == "" {
 		cfg.App.Port = ":8080"
