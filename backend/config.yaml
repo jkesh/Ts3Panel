@@ -3,12 +3,12 @@ app:
   port: ":8080"
 
 ts3:
-  protocol: "webquery"  # "webquery" | "tcp" | "ssh"
-  host: "127.0.0.1"
-  port: 10080           # webquery: 10080(http)/10443(https), tcp:10011, ssh:10022
+  protocol: "ssh"  # "webquery" | "tcp" | "ssh"
+  host: "115.159.58.72"
+  port: 10022          # webquery: 10080(http)/10443(https), tcp:10011, ssh:10022
   server_id: 1
   user: "serveradmin"   # tcp/ssh 使用
-  password: ""          # tcp/ssh 使用
+  password: "jkesh1024"          # tcp/ssh 使用
   api_key: ""           # webquery 必填
   https: false          # webquery + TLS 时设为 true
   base_path: ""         # 可选: 例如 "query"
@@ -16,10 +16,10 @@ ts3:
 # 新增数据库配置
 database:
   driver: "postgres"      # "postgres" 或 "sqlite"
-  host: "127.0.0.1"
+  host: "43.131.41.101"
   port: 5432
   user: "postgres"
-  password: "postgres"
+  password: "jkesh1024"
   dbname: "ts3panel"
   sslmode: "disable"
   timezone: "Asia/Shanghai"
